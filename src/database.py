@@ -56,7 +56,7 @@ class Database:
                 self.inverted_index[term] = TermInfo(1, [Posting(doc_id, freq_td)])
             else:
                 # term is in one doc more
-                self.inverted_index[term].term_freq_t += 1
+                self.inverted_index[term].doc_freq_t += 1
                 # include new doc
                 self.inverted_index[term].posting_list.append(Posting(doc_id, freq_td))
 
@@ -83,12 +83,12 @@ class Database:
 
         q_norm_accum = 0
         doc_accum = {}
-        for q_term, tf_tq in q_term_freqs:
+        for q_term, tf_tq in q_term_freqs.items():
             term_info = self.inverted_index[q_term]
             df_t = term_info.doc_freq_t
 
             w_tq = (1 + log10(tf_tq)) * log10(self.db_size() / df_t)
-            q_norm_accum += w_tq ^ 2
+            q_norm_accum += w_tq ** 2
 
             for post in term_info.posting_list:
                 doc_id = post.doc_id
@@ -100,7 +100,7 @@ class Database:
                 doc_accum[doc_id]["similarity"] += w_td * w_tq
 
                 # d normalization
-                doc_accum[doc_id]["d_norm"] += w_td ^ 2
+                doc_accum[doc_id]["d_norm"] += w_td ** 2
 
         q_norm = sqrt(q_norm_accum)
 
@@ -109,3 +109,5 @@ class Database:
             d_norm = sqrt(accum["d_norm"])
             similarity = accum["similarity"] / (d_norm * q_norm)
             similarities.append((doc_id, similarity))
+
+        return sorted(similarities, key=lambda x: x[1], reverse=True)
