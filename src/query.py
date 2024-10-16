@@ -1,20 +1,41 @@
-from helpers import tokens_to_term_freqs
-from preprocessing import tokenize
+from .helpers import tokens_to_term_freqs
+from .database import Database
+from math import log10, sqrt
 
-# process the query: tokenize, calculate term frequencies, normalize
-def process_query(query: str) -> dict:
-    # step 1: tokenize the query
-    tokens = tokenize(query)
-    
-    # step 2: calculate term frequencies using the helper function
-    term_freqs = tokens_to_term_freqs(tokens)
-    
-    # step 3: normalize query term frequencies
-    normalized_tfs = normalize(term_freqs)
-    
-    return normalized_tfs
+def query_database(database: Database, query: str) -> dict:
+    q_tokens = database.tokenize(query)
+    # remove tokens not in vocab
+    q_tokens = [term for term in q_tokens if term in database.inverted_index]
 
-# normalize the term frequencies by total term count
-def normalize(term_freqs: dict) -> dict:
-    total_terms = sum(term_freqs.values())
-    return {term: tf / total_terms for term, tf in term_freqs.items()}
+    q_term_freqs = tokens_to_term_freqs(q_tokens)
+
+    q_norm_accum = 0
+    doc_accum = {}
+    for q_term, tf_tq in q_term_freqs.items():
+        term_info = database.inverted_index[q_term]
+        df_t = term_info.doc_freq_t
+
+        w_tq = (1 + log10(tf_tq)) * log10(database.db_size() / df_t)
+        q_norm_accum += w_tq ** 2
+
+        for post in term_info.posting_list:
+            doc_id = post.doc_id
+            tf_td = post.term_freq_td
+            if doc_id not in doc_accum:
+                doc_accum[doc_id] = {"similarity": 0, "d_norm": 0}
+
+            w_td = (1 + log10(tf_td)) * log10(database.db_size() / df_t)
+            doc_accum[doc_id]["similarity"] += w_td * w_tq
+
+            # d normalization
+            doc_accum[doc_id]["d_norm"] += w_td ** 2
+
+    q_norm = sqrt(q_norm_accum)
+
+    similarities = []
+    for doc_id, accum in doc_accum.items():
+        d_norm = sqrt(accum["d_norm"])
+        similarity = accum["similarity"] / (d_norm * q_norm)
+        similarities.append((doc_id, similarity))
+
+    return sorted(similarities, key=lambda x: x[1], reverse=True)
