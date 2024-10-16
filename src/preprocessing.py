@@ -7,4 +7,7 @@ def read(path: Union[str, Path]) -> str:
 
 
 def tokenize(text: str) -> List[str]:
+    # get rid of special + numbers
+    # split it into list
+    # return
     raise NotImplementedError()
