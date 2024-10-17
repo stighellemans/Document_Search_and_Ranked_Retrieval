@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import List, Union
-#import regular expression operations for tokenization
 import re
 import nltk
 
@@ -13,7 +12,7 @@ stop_words = nltk.corpus.stopwords.words("english")
 
 
 def read(path: Union[str, Path]) -> str:
-    file_path = Path(path) # ensures the path supplied is a Path object
+    file_path = Path(path)
     try:
         with file_path.open('r', encoding='utf-8') as f:
             return f.read()
