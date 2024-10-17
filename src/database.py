@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Sequence, TypeVar
 
-from .helpers import tokens_to_term_freqs
+from .helpers import tokens_to_pos_idxs
 
 DocID_T = TypeVar("DocID_T", str, int)
 
@@ -10,7 +10,7 @@ DocID_T = TypeVar("DocID_T", str, int)
 class Posting:
     # later term_freq_td -> positional indices
     doc_id: DocID_T
-    term_freq_td: int
+    pos_idxs: List[int]
 
 
 @dataclass
@@ -47,17 +47,17 @@ class Database:
             return
 
         tokens = self.tokenize(doc)
-        term_freqs = tokens_to_term_freqs(tokens)
+        term_pos_idxs = tokens_to_pos_idxs(tokens)
 
-        for term, freq_td in term_freqs.items():
+        for term, pos_idxs in term_pos_idxs.items():
             if term not in self.inverted_index:
                 # start with: one doc has this term
-                self.inverted_index[term] = TermInfo(1, [Posting(doc_id, freq_td)])
+                self.inverted_index[term] = TermInfo(1, [Posting(doc_id, pos_idxs)])
             else:
                 # term is in one doc more
                 self.inverted_index[term].doc_freq_t += 1
                 # include new doc
-                self.inverted_index[term].posting_list.append(Posting(doc_id, freq_td))
+                self.inverted_index[term].posting_list.append(Posting(doc_id, pos_idxs))
 
     def remove(self, id: DocID_T):
         """removes a doc from the database"""

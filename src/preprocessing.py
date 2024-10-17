@@ -1,11 +1,12 @@
+import re
 from pathlib import Path
 from typing import List, Union
-import re
+
 
 def read(path: Union[str, Path]) -> str:
     file_path = Path(path)
     try:
-        with file_path.open('r', encoding='utf-8') as f:
+        with file_path.open("r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         raise ValueError(f"The file {path} does not exist.")
@@ -16,7 +17,7 @@ def tokenize(text: str) -> List[str]:
     text = text.lower()
 
     # remove punctuation and split by whitespace
-    tokens = re.findall(r'\b\w+\b', text)
+    tokens = re.findall(r"\b\w+\b", text)
 
     return tokens
     ##raise NotImplementedError()
