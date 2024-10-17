@@ -2,6 +2,15 @@ from pathlib import Path
 from typing import List, Union
 #import regular expression operations for tokenization
 import re
+import nltk
+
+# Initialize stemmer and lemmatizer
+stemmer = nltk.PorterStemmer()
+lemmatizer = nltk.WordNetLemmatizer()
+
+# Load stopwords from nltk
+stop_words = nltk.corpus.stopwords.words("english")
+
 
 def read(path: Union[str, Path]) -> str:
     file_path = Path(path) # ensures the path supplied is a Path object
@@ -11,17 +20,22 @@ def read(path: Union[str, Path]) -> str:
     except FileNotFoundError:
         raise ValueError(f"The file {path} does not exist.")
 
-
 def tokenize(text: str) -> List[str]:
-    # lowercase the text for case-insensitivity
     text = text.lower()
-
-    # remove punctuation and split by whitespace
     tokens = re.findall(r'\b\w+\b', text)
-
     return tokens
-    ##raise NotImplementedError()
 
+def preprocess(text: str, use_stemming: bool = False, use_lemmatization: bool = True) -> List[str]:
+    # tokenize the text using the tokenize function
+    tokens = tokenize(text)
 
-# stuff that can be added here: dealing with numbers or lemmatization
-# however, this will serve as a basic template for reading the files and tokenization
+    # remove stopwords
+    filtered_tokens = [token for token in tokens if token not in stop_words]
+
+    # use stemming or lemmatization based on the parameter supplied by the user
+    if use_stemming:
+        filtered_tokens = [stemmer.stem(word) for word in filtered_tokens]
+    elif use_lemmatization:
+        filtered_tokens = [lemmatizer.lemmatize(word) for word in filtered_tokens]
+
+    return filtered_tokens

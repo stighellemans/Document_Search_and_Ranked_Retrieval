@@ -1,5 +1,5 @@
-from helpers import tokens_to_term_freqs
-from preprocessing import tokenize
+from .helpers import tokens_to_term_freqs
+from .preprocessing import tokenize
 
 # process the query: tokenize, calculate term frequencies, normalize
 def process_query(query: str) -> dict:
