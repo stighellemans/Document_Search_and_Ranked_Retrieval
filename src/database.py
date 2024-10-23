@@ -18,7 +18,7 @@ class Posting:
 class PositionalPosting:
     # later term_freq_td -> positional indices
     doc_id: DocID_T
-    term_freq_td: int
+    term_freq_td: List[int]
 
 
 @dataclass
