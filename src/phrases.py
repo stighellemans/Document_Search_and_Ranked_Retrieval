@@ -33,24 +33,27 @@ def number_terms_in_k_width(
     # collect all query term positions
     doc_pos = {}
     for q_term in q_tokens:
-        term_info = database.inverted_index[q_term]
+        if q_term not in database.inverted_index:
+            continue
 
-        for post in term_info.posting_list:
-            doc_id = post.doc_id
+        # Unpack term_info tuple (doc_freq_t, posting_dict)
+        _, posting_dict = database.inverted_index[q_term]
+
+        for doc_id, pos_idxs in posting_dict.items():
             if doc_id not in docIDs:
                 continue
             elif doc_id not in doc_pos:
                 doc_pos[doc_id] = []
-            doc_pos[doc_id].extend([(pos, q_term) for pos in post.pos_idxs])
+            doc_pos[doc_id].extend([(pos, q_term) for pos in pos_idxs])
 
     # scan through all positions
     max_terms = {}
     for doc_id in doc_pos:
+        # Sort positions and terms by their position in the document
         doc_pos[doc_id] = sorted(doc_pos[doc_id], key=lambda x: x[0], reverse=True)
 
         pos_window = []
         term_window = []
-        k_width = 10
 
         max_terms[doc_id] = 0
 

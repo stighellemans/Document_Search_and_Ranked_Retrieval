@@ -5,7 +5,8 @@ from typing import List, Union
 import spacy
 
 # load the English model from spacy for lemmatization and stopwords
-nlp = spacy.load("en_core_web_sm")
+# disable for performance optimizations
+nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
 
 
 def read(path: Union[str, Path]) -> str:
@@ -26,15 +27,12 @@ def tokenize(text: str) -> List[str]:
 
 
 def preprocess(text: str) -> List[str]:
-
-    # Process the text with spacy
+    global nlp
     doc = nlp(text.lower())
-
     # tokenize, remove stopwords, lemmatize, and retain numbers
     filtered_tokens = [
         token.lemma_
         for token in doc
         if not token.is_stop and (token.is_alpha or token.like_num)
     ]
-
     return filtered_tokens

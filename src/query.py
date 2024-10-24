@@ -16,15 +16,14 @@ def query_database(database: Database, query: str) -> List[Tuple[DocID, float]]:
     q_norm_accum = 0
     doc_term_sim = {}
     for q_term, tf_tq in q_term_freqs.items():
+        # Retrieve term_info as tuple (doc_freq_t, posting_dict)
         term_info = database.inverted_index[q_term]
-        df_t = term_info.doc_freq_t
+        df_t, posting_dict = term_info
 
         w_tq = (1 + log10(tf_tq)) * log10(database.db_size() / df_t)
         q_norm_accum += w_tq**2
 
-        for post in term_info.posting_list:
-            doc_id = post.doc_id
-            tf_td = post.term_freq_td
+        for doc_id, tf_td in posting_dict.items():
             if doc_id not in doc_term_sim:
                 doc_term_sim[doc_id] = 0
 
@@ -59,15 +58,15 @@ def pos_query_database(
     doc_term_sim = {}
     num_q_terms = {}
     for q_term, tf_tq in q_term_freqs.items():
+        # Retrieve term_info as tuple (doc_freq_t, posting_dict)
         term_info = database.inverted_index[q_term]
-        df_t = term_info.doc_freq_t
+        df_t, posting_dict = term_info
 
         w_tq = (1 + log10(tf_tq)) * log10(database.db_size() / df_t)
         q_norm_accum += w_tq**2
 
-        for post in term_info.posting_list:
-            doc_id = post.doc_id
-            tf_td = len(post.pos_idxs)
+        for doc_id, pos_idxs in posting_dict.items():
+            tf_td = len(pos_idxs)
             if doc_id not in doc_term_sim:
                 doc_term_sim[doc_id] = 0
                 num_q_terms[doc_id] = 0
