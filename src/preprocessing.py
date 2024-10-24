@@ -1,40 +1,40 @@
+import re
 from pathlib import Path
 from typing import List, Union
-import re
-import nltk
 
-# Initialize stemmer and lemmatizer
-stemmer = nltk.PorterStemmer()
-lemmatizer = nltk.WordNetLemmatizer()
+import spacy
 
-# Load stopwords from nltk
-stop_words = nltk.corpus.stopwords.words("english")
+# load the English model from spacy for lemmatization and stopwords
+nlp = spacy.load("en_core_web_sm")
 
 
 def read(path: Union[str, Path]) -> str:
     file_path = Path(path)
     try:
-        with file_path.open('r', encoding='utf-8') as f:
+        with file_path.open("r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         raise ValueError(f"The file {path} does not exist.")
 
+
 def tokenize(text: str) -> List[str]:
     text = text.lower()
-    tokens = re.findall(r'\b\w+\b', text)
+    # adjusted regex to handle both words and numbers (decimals and exponents included)
+    tokens = re.findall(r"\b\d+(?:\.\d+)?(?:\^[-+]?\d+)?|\b\w+\b", text)
+
     return tokens
 
-def preprocess(text: str, use_stemming: bool = False, use_lemmatization: bool = True) -> List[str]:
-    # tokenize the text using the tokenize function
-    tokens = tokenize(text)
 
-    # remove stopwords
-    filtered_tokens = [token for token in tokens if token not in stop_words]
+def preprocess(text: str) -> List[str]:
 
-    # use stemming or lemmatization based on the parameter supplied by the user
-    if use_stemming:
-        filtered_tokens = [stemmer.stem(word) for word in filtered_tokens]
-    elif use_lemmatization:
-        filtered_tokens = [lemmatizer.lemmatize(word) for word in filtered_tokens]
+    # Process the text with spacy
+    doc = nlp(text.lower())
+
+    # tokenize, remove stopwords, lemmatize, and retain numbers
+    filtered_tokens = [
+        token.lemma_
+        for token in doc
+        if not token.is_stop and (token.is_alpha or token.like_num)
+    ]
 
     return filtered_tokens
