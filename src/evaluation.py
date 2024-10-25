@@ -1,3 +1,6 @@
+import pickle
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 from typing import Callable, Dict, Sequence, TypeVar, Union
 
 import numpy as np
@@ -23,11 +26,6 @@ def recall_at_k(relevant_docs: Sequence, retrieved_docs: Sequence, k: int) -> fl
         return 0.0
     return relevant_retrieved / total_relevant
 
-
-import pickle
-from concurrent.futures import ProcessPoolExecutor, as_completed
-
-from tqdm import tqdm
 
 # Global variables for worker processes
 global_db = None
@@ -62,17 +60,22 @@ def worker(q_id_q):
 def map_at_k(
     queries: Dict[QueryID, str],
     query_results: Dict[QueryID, Sequence[DocID]],
-    db: Union[Database, PositionalDatabase],
+    db: Union[str, Path, Database, PositionalDatabase],
     query_function: Callable,
     k: int,
+    max_workers: int = 1,
 ) -> float:
     # Save the database to a pickle file
-    db_pickle_path = "db.pickle"
-    with open(db_pickle_path, "wb") as f:
-        pickle.dump(db, f)
+    if isinstance(db, (Database, PositionalDatabase)):
+        db_pickle_path = "db.pkl"
+        with open(db_pickle_path, "wb") as f:
+            pickle.dump(db, f)
+    else:
+        db_pickle_path = db
 
     # Use ProcessPoolExecutor with initializer
     with ProcessPoolExecutor(
+        max_workers=max_workers,
         initializer=init_worker,
         initargs=(db_pickle_path, query_results, query_function, k),
     ) as executor:
@@ -94,19 +97,37 @@ def map_at_k(
 def mar_at_k(
     queries: Dict[QueryID, str],
     query_results: Dict[QueryID, Sequence[DocID]],
-    db: Union[Database, PositionalDatabase],
+    db: Union[str, Path, Database, PositionalDatabase],
     query_function: Callable,
     k: int,
+    max_workers: int = 1,
 ) -> float:
-    """mean average recall at k search results"""
-    recalls = []
-    for q_id, q in tqdm(queries.items(), desc=f"Processing queries for MAP@K={k}"):
-        if q_id in query_results:
-            relevant_docs = query_results[q_id]
-            retrieved_docs = [doc_id for doc_id, _ in query_function(db, q)[:k]]
-            recall = recall_at_k(relevant_docs, retrieved_docs, k)
-            recalls.append(recall)
+    # Save the database to a pickle file
+    if isinstance(db, (Database, PositionalDatabase)):
+        db_pickle_path = "db.pkl"
+        with open(db_pickle_path, "wb") as f:
+            pickle.dump(db, f)
+    else:
+        db_pickle_path = db
 
+    # Use ProcessPoolExecutor with initializer
+    with ProcessPoolExecutor(
+        max_workers=max_workers,
+        initializer=init_worker,
+        initargs=(db_pickle_path, query_results, query_function, k),
+    ) as executor:
+        # Submit tasks to the executor
+        futures = [executor.submit(worker, item) for item in queries.items()]
+        recalls = []
+        # Use tqdm to monitor the progress as futures complete
+        for future in tqdm(
+            as_completed(futures),
+            total=len(futures),
+            desc=f"Processing queries for MAR@K={k}",
+        ):
+            result = future.result()
+            if result is not None:
+                recalls.append(result)
     return float(np.mean(recalls))
 
 
