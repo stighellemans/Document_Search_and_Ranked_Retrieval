@@ -165,3 +165,8 @@ cython_debug/
 # Pickle
 *.pickle
 *.pkl
+
+
+# Databases
+*.idx
+*.pkl

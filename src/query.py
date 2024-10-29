@@ -20,14 +20,14 @@ def query_database(database: Database, query: str) -> List[Tuple[DocID, float]]:
         term_info = database.inverted_index[q_term]
         df_t, posting_dict = term_info
 
-        w_tq = (1 + log10(tf_tq)) * log10(database.db_size() / df_t)
+        w_tq = (1 + log10(tf_tq)) * log10(database.db_size / df_t)
         q_norm_accum += w_tq**2
 
         for doc_id, tf_td in posting_dict.items():
             if doc_id not in doc_term_sim:
                 doc_term_sim[doc_id] = 0
 
-            w_td = (1 + log10(tf_td)) * log10(database.db_size() / df_t)
+            w_td = (1 + log10(tf_td)) * log10(database.db_size / df_t)
             doc_term_sim[doc_id] += w_td * w_tq
 
     q_norm = sqrt(q_norm_accum)
@@ -41,7 +41,7 @@ def query_database(database: Database, query: str) -> List[Tuple[DocID, float]]:
     return sorted(similarities, key=lambda x: x[1], reverse=True)
 
 
-def pos_query_database(
+def query_pos_database(
     database: PositionalDatabase,
     query: str,
     boost_factor: float = 1.0,
@@ -62,7 +62,7 @@ def pos_query_database(
         term_info = database.inverted_index[q_term]
         df_t, posting_dict = term_info
 
-        w_tq = (1 + log10(tf_tq)) * log10(database.db_size() / df_t)
+        w_tq = (1 + log10(tf_tq)) * log10(database.db_size / df_t)
         q_norm_accum += w_tq**2
 
         for doc_id, pos_idxs in posting_dict.items():
@@ -73,7 +73,7 @@ def pos_query_database(
 
             num_q_terms[doc_id] += 1
 
-            w_td = (1 + log10(tf_td)) * log10(database.db_size() / df_t)
+            w_td = (1 + log10(tf_td)) * log10(database.db_size / df_t)
             doc_term_sim[doc_id] += w_td * w_tq
 
     q_norm = sqrt(q_norm_accum)

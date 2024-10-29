@@ -1,5 +1,7 @@
+import shutil
 from collections import Counter, defaultdict
-from typing import Dict, List, Sequence, TypeVar
+from pathlib import Path
+from typing import Dict, List, Sequence, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -33,3 +35,44 @@ def process_query_results(
                 relevant_docs = list(relevant_docs[0])  # If multiple relevant docs
             new_query_results[q_id] = relevant_docs
     return new_query_results
+
+
+def remove_folder(dir: Union[Path, str]):
+    dir = Path(dir)
+    if dir.exists() and dir.is_dir():
+        shutil.rmtree(dir)
+
+
+def vbyte_encode(number: int) -> bytes:
+    """Variable-byte encode a single integer."""
+    bytes_list = []
+    while True:
+        bytes_list.insert(0, number & 0x7F)  # Take the last 7 bits of the number
+        if number < 128:
+            break
+        number >>= 7  # Shift right by 7 bits to prepare for the next 7 bits
+    bytes_list[-1] |= 0x80  # Set the last byte’s highest bit to 1 (continuation bit)
+    return bytes(bytes_list)
+
+
+def vbyte_decode(byte_data: bytes) -> int:
+    """Variable-byte decode a sequence of bytes into an integer."""
+    number = 0
+    for byte in byte_data:
+        number = (number << 7) | (byte & 0x7F)
+        if byte & 0x80:
+            break
+    return number
+
+
+def delta_encode(numbers: List[int]) -> List[int]:
+    """Apply delta encoding to a list of integers."""
+    return [numbers[0]] + [numbers[i] - numbers[i - 1] for i in range(1, len(numbers))]
+
+
+def delta_decode(deltas: List[int]) -> List[int]:
+    """Apply delta decoding to a list of deltas."""
+    numbers = [deltas[0]]
+    for delta in deltas[1:]:
+        numbers.append(numbers[-1] + delta)
+    return numbers
