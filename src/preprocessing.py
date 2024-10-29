@@ -7,6 +7,7 @@ import spacy
 # load the English model from spacy for lemmatization and stopwords
 # disable for performance optimizations
 nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
+nlp.max_length = 10000000
 
 
 def read(path: Union[str, Path]) -> str:
@@ -20,19 +21,19 @@ def read(path: Union[str, Path]) -> str:
 
 def tokenize(text: str) -> List[str]:
     text = text.lower()
-    # adjusted regex to handle both words and numbers (decimals and exponents included)
-    tokens = re.findall(r"\b\d+(?:\.\d+)?(?:\^[-+]?\d+)?|\b\w+\b", text)
+
+    # only letters words
+    tokens = re.findall(r"\b[a-zA-Z]+\b", text)
 
     return tokens
 
 
 def preprocess(text: str) -> List[str]:
     global nlp
-    doc = nlp(text.lower())
-    # tokenize, remove stopwords, lemmatize, and retain numbers
+    clean_text = re.sub(r"[^a-zA-Z]+", " ", text)
+    doc = nlp(clean_text.lower())
+    # tokenize, remove stopwords, lemmatize
     filtered_tokens = [
-        token.lemma_
-        for token in doc
-        if not token.is_stop and (token.is_alpha or token.like_num)
+        token.lemma_ for token in doc if not token.is_stop and token.is_alpha
     ]
     return filtered_tokens

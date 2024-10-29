@@ -30,13 +30,11 @@ def number_terms_in_k_width(
 ) -> Dict[DocID, int]:
     """Outputs the max number of query terms inside a window of k width"""
 
-    # collect all query term positions
     doc_pos = {}
     for q_term in q_tokens:
         if q_term not in database.inverted_index:
             continue
 
-        # Unpack term_info tuple (doc_freq_t, posting_dict)
         _, posting_dict = database.inverted_index[q_term]
 
         for doc_id, pos_idxs in posting_dict.items():
@@ -49,7 +47,6 @@ def number_terms_in_k_width(
     # scan through all positions
     max_terms = {}
     for doc_id in doc_pos:
-        # Sort positions and terms by their position in the document
         doc_pos[doc_id] = sorted(doc_pos[doc_id], key=lambda x: x[0], reverse=True)
 
         pos_window = []
